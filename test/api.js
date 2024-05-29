@@ -336,4 +336,56 @@ describe('API', () => {
 				.catch(done);
 		});
 	});
+
+	// Test cases for depth option
+	describe('depth option', () => {
+		const baseDir = path.join(__dirname, 'cjs');
+		const entryFile = path.join(baseDir, 'a.js');
+
+		it('limits the depth of dependency traversal correctly', (done) => {
+			madge(entryFile, { depth: 1 }).then((res) => {
+				res.obj().should.eql({
+					'a.js': ['b.js', 'c.js']
+				});
+				done();
+			}).catch(done);
+		});
+
+		it('includes correct dependencies at different depth levels', (done) => {
+			madge(entryFile, { depth: 2 }).then((res) => {
+				res.obj().should.eql({
+					'a.js': ['b.js', 'c.js'],
+					'b.js': ['c.js']
+				});
+				done();
+			}).catch(done);
+		});
+
+		it('does not include dependencies beyond the specified depth', (done) => {
+			madge(entryFile, { depth: 0 }).then((res) => {
+				res.obj().should.eql({
+					'a.js': []
+				});
+				done();
+			}).catch(done);
+		});
+
+		it('ensures full traversal when depth is not specified', (done) => {
+			madge(entryFile).then((res) => {
+				res.obj().should.eql({
+					'a.js': ['b.js', 'c.js'],
+					'b.js': ['c.js'],
+					'c.js': []
+				});
+				done();
+			}).catch(done);
+		});
+
+		it('handles invalid depth values appropriately', (done) => {
+			madge(entryFile, { depth: -1 }).catch((err) => {
+				err.message.should.match(/Invalid depth/);
+				done();
+			}).catch(done);
+		});
+	});
 });
